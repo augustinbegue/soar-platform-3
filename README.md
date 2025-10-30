@@ -34,5 +34,8 @@ terraform/
 ```bash
 cd terraform
 terraform init
-terraform validate -var-file="config/dev.tfvars"
+terraform validate -var-file="config/dev-single-az.tfvars"
+terraform plan -var-file="config/dev-single-az.tfvars"
+terraform apply -var-file="config/dev-single-az.tfvars" -auto-approve
+terraform destroy -var-file="config/dev-single-az.tfvars" -auto-approve
 ```
