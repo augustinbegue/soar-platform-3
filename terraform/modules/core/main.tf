@@ -160,3 +160,36 @@ resource "aws_route_table_association" "private" {
   subnet_id      = each.value.id
   route_table_id = aws_route_table.private[each.key].id
 }
+
+# ========================================
+# Security Groups
+# ========================================
+
+# Security Group for ALB
+resource "aws_security_group" "alb" {
+  name        = "${local.name_prefix}-alb-sg"
+  description = "Security group for Application Load Balancer"
+  vpc_id      = aws_vpc.main.id
+
+  # Ingress: Allow HTTP from internet
+  ingress {
+    description = "Allow HTTP from internet"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Egress: Allow all outbound traffic
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.tags, {
+    Name = "${local.name_prefix}-alb-sg"
+  })
+}

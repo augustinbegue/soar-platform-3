@@ -20,7 +20,7 @@ output "database_subnet_ids" {
 
 output "alb_security_group_ids" {
   description = "Security group IDs that should be attached to ALB resources."
-  value       = []
+  value       = [aws_security_group.alb.id]
 }
 
 output "ecs_security_group_ids" {

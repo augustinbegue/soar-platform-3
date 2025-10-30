@@ -18,14 +18,16 @@ variable "capacity_subnet_ids" {
   type        = list(string)
 }
 
-variable "load_balancer_arn" {
-  description = "ARN of the ALB distributing traffic to ECS services."
-  type        = string
-}
-
 variable "target_group_arns" {
   description = "List of target group ARNs associated with the ALB listeners."
   type        = list(string)
+  default     = []
+}
+
+variable "alb_security_group_id" {
+  description = "Security group ID of the ALB to allow traffic from ALB to ECS."
+  type        = string
+  default     = ""
 }
 
 variable "cluster_desired_count" {

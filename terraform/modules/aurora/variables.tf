@@ -19,6 +19,11 @@ variable "security_group_ids" {
   default     = []
 }
 
+variable "ecs_security_group_id" {
+  description = "Security group ID of ECS tasks that should be allowed to connect to the database (used in ingress rule)."
+  type        = string
+  default     = ""
+}
 variable "engine_mode" {
   description = "Aurora cluster engine mode (provisioned, serverless, global)."
   type        = string
