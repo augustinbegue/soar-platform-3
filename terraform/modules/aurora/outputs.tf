@@ -18,3 +18,9 @@ output "connection_string" {
   value       = "postgresql://${aws_rds_cluster.aurora.master_username}:${var.master_password}@${aws_rds_cluster.aurora.endpoint}:5432/${aws_rds_cluster.aurora.database_name}"
   sensitive   = true
 }
+
+output "secret_arn" {
+  description = "ARN of the Secrets Manager secret that holds the DB credentials."
+  value       = aws_secretsmanager_secret.aurora_credentials.arn
+  sensitive   = true
+}

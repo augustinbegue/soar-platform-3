@@ -1,25 +1,28 @@
-# Configuration Single AZ - DEV/TEST SEULEMENT
+# Configuration DEV - sample two AZ layout (required for Aurora clusters)
 
 project     = "soar-platform"
 environment = "dev"
 aws_region  = "eu-west-1"
 
-# Single AZ pour économiser
-availability_zones = ["eu-west-1a"]
+# Two AZs (add more as needed)
+availability_zones = ["eu-west-1a", "eu-west-1b"]
 
 vpc_cidr = "10.20.0.0/16"
 
-# Public subnet (1 seul AZ)
+# Public subnets (one per AZ)
 public_subnet_cidrs = {
-  "a" = "10.20.0.0/20" # 10.20.0.0 - 10.20.15.255 (4091 IPs)
+  "a" = "10.20.0.0/20"   # eu-west-1a
+  "b" = "10.20.16.0/20"  # eu-west-1b
 }
 
-# Private subnet (1 seul AZ)
+# Private subnets (one per AZ)
 private_subnet_cidrs = {
-  "a" = "10.20.64.0/20" # 10.20.64.0 - 10.20.79.255 (4091 IPs)
+  "a" = "10.20.64.0/20"  # eu-west-1a
+  "b" = "10.20.80.0/20"  # eu-west-1b
 }
 
-# Database subnet (1 seul AZ)
+# Database subnets (one per AZ) - Aurora requires at least 2 AZs
 database_subnet_cidrs = {
-  "a" = "10.20.160.0/21" # 10.20.160.0 - 10.20.167.255 (2043 IPs)
+  "a" = "10.20.160.0/21"  # eu-west-1a
+  "b" = "10.20.168.0/21"  # eu-west-1b
 }
