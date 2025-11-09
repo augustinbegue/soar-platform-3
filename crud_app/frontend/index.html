@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CRUD Utilisateurs - Frontend</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <h1>🔮 CRUD Utilisateurs</h1>
+        </div>
+        <div class="header-right" id="server-info">
+            <!-- Server info populated by JS -->
+            <div class="server-item">Serveur: <strong id="si-hostname">N/A</strong></div>
+            <div class="server-item">IP publique: <strong id="si-clientip">N/A</strong></div>
+            <div class="server-item">IP privée: <strong id="si-privateip">N/A</strong></div>
+            <div class="server-item">Région: <strong>eu-west-1</strong></div>
+            <div class="server-item">Déployé via: <strong>Ansible & Terraform</strong></div>
+        </div>
+    </header>
+
+    <main class="app">
+        <section class="controls">
+            <div class="search">
+                <input id="search-input" placeholder="Rechercher par nom ou email..." />
+                <button id="search-btn">🔍</button>
+                <button id="refresh-btn" title="Rafraîchir">⟲</button>
+            </div>
+            <div class="create">
+                <input id="name-input" placeholder="Nom" />
+                <input id="email-input" placeholder="Email" />
+                <button id="create-btn">➕ Ajouter</button>
+            </div>
+        </section>
+
+        <section class="list">
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom</th>
+                        <th>Email</th>
+                        <th>Créé le</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- rows inserted by JS -->
+                </tbody>
+            </table>
+            <div id="pagination" class="pagination"></div>
+        </section>
+
+        <aside class="panel">
+            <h3>Backend Info</h3>
+            <div id="backend-panel">Chargement...</div>
+        </aside>
+    </main>
+
+    <!-- Edit modal (simple) -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Modifier l'utilisateur</h3>
+            <input id="edit-name" placeholder="Nom" />
+            <input id="edit-email" placeholder="Email" />
+            <div class="modal-actions">
+                <button id="save-edit">💾 Sauvegarder</button>
+                <button id="cancel-edit">✖ Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+        // API base - default to same origin. If backend runs on different host/port, set window.__API_BASE__ before this script.
+        window.API_BASE = (window.__API_BASE__ !== undefined) ? window.__API_BASE__ : 'http://localhost:3001';
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>

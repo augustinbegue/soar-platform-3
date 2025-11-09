@@ -41,3 +41,33 @@ variable "launch_type" {
   type        = string
   default     = "FARGATE"
 }
+
+variable "container_image" {
+  description = "Container image to run for the application (allows swapping to a CRUD app)."
+  type        = string
+  default     = "nginx:latest"
+}
+
+variable "db_secret_arn" {
+  description = "ARN of the Secrets Manager secret that holds DB credentials (optional)."
+  type        = string
+  default     = ""
+}
+
+variable "db_writer_endpoint" {
+  description = "Writer endpoint for the database cluster (hostname) used by the app."
+  type        = string
+  default     = ""
+}
+
+variable "aurora_security_group_ids" {
+  description = "List of Aurora VPC security group IDs so ECS can create an ingress rule allowing DB traffic from tasks." 
+  type        = list(string)
+  default     = []
+}
+
+variable "db_name" {
+  description = "Name of the database to connect to (injected as DB_NAME env var)."
+  type        = string
+  default     = ""
+}

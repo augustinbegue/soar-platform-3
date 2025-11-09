@@ -21,6 +21,7 @@ resource "aws_secretsmanager_secret_version" "aurora_credentials_version" {
 # ========================================
 
 resource "aws_security_group_rule" "aurora_from_ecs" {
+  count                    = var.ecs_security_group_id != "" ? 1 : 0
   type                     = "ingress"
   from_port                = 5432
   to_port                  = 5432

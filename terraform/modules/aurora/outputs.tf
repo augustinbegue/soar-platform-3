@@ -13,6 +13,11 @@ output "reader_endpoint" {
   value       = aws_rds_cluster.aurora.reader_endpoint
 }
 
+output "database_name" {
+  description = "Database name created on the Aurora cluster."
+  value       = aws_rds_cluster.aurora.database_name
+}
+
 output "connection_string" {
   description = "PostgreSQL connection string URI for the Aurora cluster (username/password in Secrets Manager)."
   value       = "postgresql://${aws_rds_cluster.aurora.master_username}:${var.master_password}@${aws_rds_cluster.aurora.endpoint}:5432/${aws_rds_cluster.aurora.database_name}"
@@ -23,4 +28,9 @@ output "secret_arn" {
   description = "ARN of the Secrets Manager secret that holds the DB credentials."
   value       = aws_secretsmanager_secret.aurora_credentials.arn
   sensitive   = true
+}
+
+output "aurora_security_group_ids" {
+  description = "List of VPC security group IDs associated with the Aurora cluster."
+  value       = aws_rds_cluster.aurora.vpc_security_group_ids
 }
