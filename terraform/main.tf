@@ -43,7 +43,17 @@ module "ecs" {
   target_group_arns     = []
   alb_security_group_id = ""
 
-  depends_on = [module.core]
+  # Database connection
+  container_image        = "ghcr.io/mzzay/soar-platform2/crud_app/backend:master-fddc6fe"
+  db_secret_arn          = module.aurora.secret_arn
+  db_writer_endpoint     = module.aurora.writer_endpoint
+  db_reader_endpoint     = module.aurora.reader_endpoint
+  db_reader_endpoints_per_az = module.aurora.reader_instance_endpoints
+  db_name                = module.aurora.database_name
+  availability_zones     = var.availability_zones
+  aurora_security_group_ids = module.aurora.aurora_security_group_ids
+
+  depends_on = [module.core, module.aurora]
 }
 
 module "aurora" {
@@ -53,7 +63,7 @@ module "aurora" {
   vpc_id                  = module.core.vpc_id
   database_subnet_ids     = module.core.private_subnet_ids
   security_group_ids      = module.core.aurora_security_group_ids
-  ecs_security_group_id   = module.ecs.ecs_tasks_security_group_id
+  availability_zones      = var.availability_zones
   engine_mode             = "provisioned"
   master_username         = "changeme"
   master_password         = "changeme" # TODO: Inject via secrets manager or SSM; never commit real secrets.
@@ -63,4 +73,15 @@ module "aurora" {
   skip_final_snapshot     = true
 
   depends_on = [module.core]
+}
+
+module "s3_frontend" {
+  source = "./modules/s3-frontend"
+
+  name_prefix = local.name_prefix
+  # Backend URL will be constructed from ECS service public IPs
+  # For now, use a placeholder - we'll need to get the actual ECS task IP after deployment
+  backend_url = "http://PLACEHOLDER:3001"
+
+  depends_on = [module.ecs]
 }

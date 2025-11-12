@@ -71,3 +71,25 @@ variable "db_name" {
   type        = string
   default     = ""
 }
+
+variable "db_reader_endpoint" {
+  description = "Load-balanced reader endpoint for Aurora cluster (fallback)."
+  type        = string
+  default     = ""
+}
+
+variable "db_reader_endpoints_per_az" {
+  description = "Map of reader endpoints per AZ (reader_a, reader_b, reader_c)."
+  type = map(string)
+  default = {
+    reader_a = ""
+    reader_b = ""
+    reader_c = ""
+  }
+}
+
+variable "availability_zones" {
+  description = "List of availability zones matching the order of private_subnet_ids."
+  type        = list(string)
+  default     = []
+}

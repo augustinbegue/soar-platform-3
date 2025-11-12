@@ -16,21 +16,7 @@ resource "aws_secretsmanager_secret_version" "aurora_credentials_version" {
     password = var.master_password
   })
 }
-# ========================================
-# Security group rule: autoriser ECS sur 5432
-# ========================================
 
-resource "aws_security_group_rule" "aurora_from_ecs" {
-  count                    = var.ecs_security_group_id != "" ? 1 : 0
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  security_group_id        = length(var.security_group_ids) > 0 ? var.security_group_ids[0] : aws_security_group.aurora[0].id
-  source_security_group_id = var.ecs_security_group_id
-  description              = "Allow PostgreSQL from ECS tasks"
-  depends_on               = [aws_rds_cluster.aurora]
-}
 # ========================================
 # Aurora Writer Instance (Serverless v2)
 # ========================================
@@ -43,8 +29,77 @@ resource "aws_rds_cluster_instance" "writer" {
   engine_version       = var.engine_version != "" ? var.engine_version : null
   publicly_accessible  = false
   db_subnet_group_name = aws_db_subnet_group.aurora.name
-  tags                 = local.tags
+  
+  # Writer instance explicitly in first AZ
+  availability_zone    = length(var.availability_zones) > 0 ? var.availability_zones[0] : null
+  
+  tags = merge(local.tags, {
+    Role = "writer"
+    AZ   = length(var.availability_zones) > 0 ? var.availability_zones[0] : "auto"
+  })
 }
+
+# ========================================
+# Aurora Read Replicas (Serverless v2)
+# ========================================
+
+# Read replica in AZ-A (same as writer for local reads)
+resource "aws_rds_cluster_instance" "reader_a" {
+  count = length(var.availability_zones) > 0 ? 1 : 0
+  
+  identifier           = "${var.name_prefix}-aurora-reader-a"
+  cluster_identifier   = aws_rds_cluster.aurora.id
+  instance_class       = "db.serverless"
+  engine               = var.engine
+  engine_version       = var.engine_version != "" ? var.engine_version : null
+  publicly_accessible  = false
+  db_subnet_group_name = aws_db_subnet_group.aurora.name
+  availability_zone    = var.availability_zones[0]
+  
+  tags = merge(local.tags, {
+    Role = "reader"
+    AZ   = var.availability_zones[0]
+  })
+}
+
+# Read replica in AZ-B
+resource "aws_rds_cluster_instance" "reader_b" {
+  count = length(var.availability_zones) > 1 ? 1 : 0
+  
+  identifier           = "${var.name_prefix}-aurora-reader-b"
+  cluster_identifier   = aws_rds_cluster.aurora.id
+  instance_class       = "db.serverless"
+  engine               = var.engine
+  engine_version       = var.engine_version != "" ? var.engine_version : null
+  publicly_accessible  = false
+  db_subnet_group_name = aws_db_subnet_group.aurora.name
+  availability_zone    = var.availability_zones[1]
+  
+  tags = merge(local.tags, {
+    Role = "reader"
+    AZ   = var.availability_zones[1]
+  })
+}
+
+# Read replica in AZ-C
+resource "aws_rds_cluster_instance" "reader_c" {
+  count = length(var.availability_zones) > 2 ? 1 : 0
+  
+  identifier           = "${var.name_prefix}-aurora-reader-c"
+  cluster_identifier   = aws_rds_cluster.aurora.id
+  instance_class       = "db.serverless"
+  engine               = var.engine
+  engine_version       = var.engine_version != "" ? var.engine_version : null
+  publicly_accessible  = false
+  db_subnet_group_name = aws_db_subnet_group.aurora.name
+  availability_zone    = var.availability_zones[2]
+  
+  tags = merge(local.tags, {
+    Role = "reader"
+    AZ   = var.availability_zones[2]
+  })
+}
+
 resource "aws_rds_cluster" "aurora" {
   cluster_identifier      = "${var.name_prefix}-aurora-cluster"
   engine                  = var.engine
@@ -66,10 +121,27 @@ resource "aws_rds_cluster" "aurora" {
   storage_encrypted       = true
   deletion_protection     = false
   apply_immediately       = true
+  
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.aurora.name
 
   serverlessv2_scaling_configuration {
     min_capacity = 0.5
     max_capacity = 2
+  }
+
+  tags = local.tags
+}
+
+# Parameter group to disable SSL requirement
+resource "aws_rds_cluster_parameter_group" "aurora" {
+  name        = "${var.name_prefix}-aurora-params"
+  family      = "aurora-postgresql17"
+  description = "Aurora cluster parameter group for ${var.name_prefix}"
+
+  parameter {
+    name  = "rds.force_ssl"
+    value = "0"
+    apply_method = "immediate"
   }
 
   tags = local.tags
@@ -92,6 +164,7 @@ resource "aws_security_group" "aurora" {
 
   tags = local.tags
 }
+
 locals {
   tags = {
     Component = "aurora"

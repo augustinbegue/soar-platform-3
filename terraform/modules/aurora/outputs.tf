@@ -34,3 +34,31 @@ output "aurora_security_group_ids" {
   description = "List of VPC security group IDs associated with the Aurora cluster."
   value       = aws_rds_cluster.aurora.vpc_security_group_ids
 }
+
+output "writer_instance_id" {
+  description = "Identifier of the Aurora writer instance."
+  value       = aws_rds_cluster_instance.writer.id
+}
+
+output "reader_instance_ids" {
+  description = "List of reader instance identifiers across all AZs."
+  value = concat(
+    aws_rds_cluster_instance.reader_a[*].id,
+    aws_rds_cluster_instance.reader_b[*].id,
+    aws_rds_cluster_instance.reader_c[*].id
+  )
+}
+
+output "reader_instance_endpoints" {
+  description = "Individual endpoints for each reader instance (for direct access if needed)."
+  value = {
+    reader_a = length(aws_rds_cluster_instance.reader_a) > 0 ? aws_rds_cluster_instance.reader_a[0].endpoint : null
+    reader_b = length(aws_rds_cluster_instance.reader_b) > 0 ? aws_rds_cluster_instance.reader_b[0].endpoint : null
+    reader_c = length(aws_rds_cluster_instance.reader_c) > 0 ? aws_rds_cluster_instance.reader_c[0].endpoint : null
+  }
+}
+
+output "cluster_member_count" {
+  description = "Total number of cluster members (writer + readers)."
+  value       = 1 + length(aws_rds_cluster_instance.reader_a) + length(aws_rds_cluster_instance.reader_b) + length(aws_rds_cluster_instance.reader_c)
+}

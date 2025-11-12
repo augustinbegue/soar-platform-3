@@ -19,11 +19,6 @@ variable "security_group_ids" {
   default     = []
 }
 
-variable "ecs_security_group_id" {
-  description = "Security group ID of ECS tasks that should be allowed to connect to the database (used in ingress rule)."
-  type        = string
-  default     = ""
-}
 variable "engine_mode" {
   description = "Aurora cluster engine mode (provisioned, serverless, global)."
   type        = string
@@ -71,4 +66,10 @@ variable "final_snapshot_identifier" {
   description = "Optional final snapshot identifier used when skip_final_snapshot is false. If empty, a generated identifier will be used." 
   type        = string
   default     = ""
+}
+
+variable "availability_zones" {
+  description = "List of availability zones for read replica distribution"
+  type        = list(string)
+  default     = []
 }

@@ -85,12 +85,12 @@ resource "aws_security_group_rule" "ecs_from_internet" {
   count = var.alb_security_group_id == "" ? 1 : 0
 
   type              = "ingress"
-  from_port         = 80
-  to_port           = 80
+  from_port         = 3001
+  to_port           = 3001
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.ecs_tasks.id
-  description       = "Allow HTTP traffic from internet (no ALB mode)"
+  description       = "Allow backend traffic from internet (no ALB mode)"
 }
 
 # ========================================
@@ -127,6 +127,26 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Additional policy for accessing Secrets Manager
+resource "aws_iam_role_policy" "ecs_task_execution_secrets_policy" {
+  name = "${var.name_prefix}-ecs-task-execution-secrets-policy"
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = var.db_secret_arn
+      }
+    ]
+  })
 }
 
 # ========================================
@@ -180,6 +200,27 @@ resource "aws_iam_role_policy" "ecs_task_role_cloudwatch_policy" {
   })
 }
 
+# Policy to allow ECS Exec (for debugging and metadata access)
+resource "aws_iam_role_policy" "ecs_task_role_exec_policy" {
+  name = "${var.name_prefix}-ecs-task-exec-policy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeTasks",
+          "ecs:DescribeTaskDefinition",
+          "ec2:DescribeNetworkInterfaces"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # ========================================
 # CloudWatch Log Group
 # ========================================
@@ -209,15 +250,20 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = jsonencode([
     {
-      name      = "nginx"
-      image     = "nginx:latest"
+      name      = "app"
+      image     = var.container_image
       essential = true
-
+      
       portMappings = [
         {
-          containerPort = 80
+          containerPort = 3001
           protocol      = "tcp"
         }
+      ]
+
+      entryPoint = ["/bin/sh", "-c"]
+      command = [
+        "TASK_AZ=$(wget -qO- $ECS_CONTAINER_METADATA_URI_V4/task 2>/dev/null | grep -o 'AvailabilityZone\":\"[^\"]*' | cut -d'\"' -f3) && echo \"Detected AZ: $TASK_AZ\" && if echo \"$TASK_AZ\" | grep -q 'a$'; then DB_READ_HOST=\"$DB_READER_A\"; echo \"Using AZ-A reader\"; elif echo \"$TASK_AZ\" | grep -q 'b$'; then DB_READ_HOST=\"$DB_READER_B\"; echo \"Using AZ-B reader\"; elif echo \"$TASK_AZ\" | grep -q 'c$'; then DB_READ_HOST=\"$DB_READER_C\"; echo \"Using AZ-C reader\"; else DB_READ_HOST=\"$DB_READER_FALLBACK\"; echo \"Using fallback reader\"; fi && export DATABASE_URL_WRITER=\"postgresql://$DB_USER:$DB_PASSWORD@$DB_WRITER_HOST:$DB_PORT/$DB_NAME\" && export DATABASE_URL_READER=\"postgresql://$DB_USER:$DB_PASSWORD@$DB_READ_HOST:$DB_PORT/$DB_NAME\" && export DATABASE_URL=\"$DATABASE_URL_WRITER\" && echo \"Writer: $DB_WRITER_HOST\" && echo \"Reader: $DB_READ_HOST\" && exec node index.js"
       ]
 
       logConfiguration = {
@@ -225,14 +271,69 @@ resource "aws_ecs_task_definition" "app" {
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.ecs_tasks.name
           "awslogs-region"        = data.aws_region.current.id
-          "awslogs-stream-prefix" = "nginx"
+          "awslogs-stream-prefix" = "app"
         }
       }
 
       environment = [
         {
+          name  = "PORT"
+          value = "3001"
+        },
+        {
+          name  = "HOST"
+          value = "0.0.0.0"
+        },
+        {
           name  = "ENVIRONMENT"
           value = "dev"
+        },
+        {
+          name  = "DB_WRITER_HOST"
+          value = var.db_writer_endpoint
+        },
+        {
+          name  = "DB_READER_A"
+          value = var.db_reader_endpoints_per_az["reader_a"]
+        },
+        {
+          name  = "DB_READER_B"
+          value = var.db_reader_endpoints_per_az["reader_b"]
+        },
+        {
+          name  = "DB_READER_C"
+          value = var.db_reader_endpoints_per_az["reader_c"]
+        },
+        {
+          name  = "DB_READER_FALLBACK"
+          value = var.db_reader_endpoint
+        },
+        {
+          name  = "DB_PORT"
+          value = "5432"
+        },
+        {
+          name  = "DB_NAME"
+          value = var.db_name
+        },
+        {
+          name  = "DATABASE_USE_CLUSTER"
+          value = "false"
+        },
+        {
+          name  = "NODE_TLS_REJECT_UNAUTHORIZED"
+          value = "0"
+        }
+      ]
+      
+      secrets = [
+        {
+          name      = "DB_USER"
+          valueFrom = "${var.db_secret_arn}:username::"
+        },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = "${var.db_secret_arn}:password::"
         }
       ]
     }
@@ -270,8 +371,8 @@ resource "aws_ecs_service" "app" {
     for_each = length(var.target_group_arns) > 0 ? [1] : []
     content {
       target_group_arn = var.target_group_arns[0]
-      container_name   = "nginx"
-      container_port   = 80
+      container_name   = "app"
+      container_port   = 3001
     }
   }
 
