@@ -1,0 +1,88 @@
+# Basic health check
+GET http://${ALB_DNS_NAME}/health
+
+# Database health check
+GET http://${ALB_DNS_NAME}/health/database
+
+# Backend root endpoint
+GET http://${ALB_DNS_NAME}/
+
+# ============================================================================
+# Backend READ Operations (GET)
+# ============================================================================
+
+# Get all users (with pagination)
+GET http://${ALB_DNS_NAME}/db/users
+
+# Get specific user
+GET http://${ALB_DNS_NAME}/db/users/1
+
+# Search users
+GET http://${ALB_DNS_NAME}/db/users/search/test
+
+# Get all logs
+GET http://${ALB_DNS_NAME}/db/logs
+
+# Get database statistics
+GET http://${ALB_DNS_NAME}/db/stats
+
+# Get server info
+GET http://${ALB_DNS_NAME}/info
+
+# ============================================================================
+# Backend WRITE Operations (POST - Create Users)
+# ============================================================================
+
+POST http://${ALB_DNS_NAME}/db/users
+Content-Type: application/json
+@request-bodies/create-user-1.json
+
+POST http://${ALB_DNS_NAME}/db/users
+Content-Type: application/json
+@request-bodies/create-user-2.json
+
+POST http://${ALB_DNS_NAME}/db/users
+Content-Type: application/json
+@request-bodies/create-user-3.json
+
+# ============================================================================
+# Backend CREATE Operations (POST - Add Logs)
+# ============================================================================
+
+POST http://${ALB_DNS_NAME}/db/logs
+Content-Type: application/json
+@request-bodies/create-log-info.json
+
+POST http://${ALB_DNS_NAME}/db/logs
+Content-Type: application/json
+@request-bodies/create-log-warn.json
+
+# ============================================================================
+# Backend UPDATE Operations (PUT)
+# ============================================================================
+
+PUT http://${ALB_DNS_NAME}/db/users/1
+Content-Type: application/json
+@request-bodies/update-user-1.json
+
+PUT http://${ALB_DNS_NAME}/db/users/2
+Content-Type: application/json
+@request-bodies/update-user-2.json
+
+# ============================================================================
+# Backend BULK Operations (POST)
+# ============================================================================
+
+POST http://${ALB_DNS_NAME}/db/users/bulk
+Content-Type: application/json
+@request-bodies/bulk-users.json
+
+# ============================================================================
+# Backend DELETE Operations (Cleanup)
+# ============================================================================
+
+DELETE http://${ALB_DNS_NAME}/db/users/1
+
+DELETE http://${ALB_DNS_NAME}/db/users/2
+
+DELETE http://${ALB_DNS_NAME}/db/clear

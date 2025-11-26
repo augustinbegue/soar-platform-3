@@ -93,6 +93,19 @@ resource "aws_security_group_rule" "ecs_from_internet" {
   description       = "Allow backend traffic from internet (no ALB mode)"
 }
 
+# Allow ECS tasks to connect to Aurora on PostgreSQL port
+resource "aws_security_group_rule" "aurora_from_ecs" {
+  count = length(var.aurora_security_group_ids) > 0 ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.ecs_tasks.id
+  security_group_id        = var.aurora_security_group_ids[0]
+  description              = "Allow PostgreSQL traffic from ECS tasks"
+}
+
 # ========================================
 # IAM Role for ECS Task Execution
 # ========================================
@@ -367,12 +380,6 @@ resource "aws_ecs_service" "app" {
     assign_public_ip = !var.enable_alb
   }
 
-  # Spread tasks evenly across availability zones
-  ordered_placement_strategy {
-    type  = "spread"
-    field = "attribute:ecs.availability-zone"
-  }
-
   dynamic "load_balancer" {
     for_each = length(var.target_group_arns) > 0 ? [1] : []
     content {
@@ -421,6 +428,7 @@ resource "aws_appautoscaling_policy" "ecs_cpu_scaling" {
     target_value       = var.autoscaling_cpu_target
     scale_in_cooldown  = var.scale_in_cooldown
     scale_out_cooldown = var.scale_out_cooldown
+    disable_scale_in   = false
 
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
@@ -434,13 +442,13 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
 
   alarm_name          = "${var.name_prefix}-ecs-cpu-high"
   comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
+  evaluation_periods  = 1
   metric_name         = "CPUUtilization"
   namespace           = "AWS/ECS"
-  period              = 60
+  period              = 30
   statistic           = "Average"
   threshold           = 70
-  alarm_description   = "ECS service CPU utilization is above 70% for 2 minutes"
+  alarm_description   = "ECS service CPU utilization is above 70% for 30 seconds"
   alarm_actions       = []
 
   dimensions = {
@@ -450,7 +458,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
 
   tags = merge(local.tags, {
     Name      = "${var.name_prefix}-ecs-cpu-high-alarm"
-    Threshold = "70%"
+    Threshold = "70"
   })
 }
 
@@ -460,13 +468,13 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_low" {
 
   alarm_name          = "${var.name_prefix}-ecs-cpu-low"
   comparison_operator = "LessThanThreshold"
-  evaluation_periods  = 5
+  evaluation_periods  = 1
   metric_name         = "CPUUtilization"
   namespace           = "AWS/ECS"
-  period              = 60
+  period              = 30
   statistic           = "Average"
   threshold           = 30
-  alarm_description   = "ECS service CPU utilization is below 30% for 5 minutes"
+  alarm_description   = "ECS service CPU utilization is below 30% for 30 seconds"
   alarm_actions       = []
 
   dimensions = {
@@ -476,7 +484,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_low" {
 
   tags = merge(local.tags, {
     Name      = "${var.name_prefix}-ecs-cpu-low-alarm"
-    Threshold = "30%"
+    Threshold = "30"
   })
 }
 

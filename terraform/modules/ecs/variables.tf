@@ -127,11 +127,11 @@ variable "autoscaling_cpu_target" {
 variable "scale_in_cooldown" {
   description = "Cooldown period in seconds before allowing another scale-in activity."
   type        = number
-  default     = 300
+  default     = 30
 }
 
 variable "scale_out_cooldown" {
   description = "Cooldown period in seconds before allowing another scale-out activity."
   type        = number
-  default     = 120
+  default     = 30
 }

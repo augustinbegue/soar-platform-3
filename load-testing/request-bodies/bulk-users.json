@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "name": "Bulk User 1",
+      "email": "bulk1@example.com"
+    },
+    {
+      "name": "Bulk User 2",
+      "email": "bulk2@example.com"
+    },
+    {
+      "name": "Bulk User 3",
+      "email": "bulk3@example.com"
+    }
+  ]
+}

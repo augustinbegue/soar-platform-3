@@ -161,3 +161,4 @@ docs/generated/
 # Ignore test artifacts
 test-results/
 *.test
+*.final.txt
