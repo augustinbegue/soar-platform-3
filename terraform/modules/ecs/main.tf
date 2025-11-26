@@ -69,11 +69,11 @@ resource "aws_security_group" "ecs_tasks" {
 
 # Allow traffic from ALB to ECS (only if ALB is configured)
 resource "aws_security_group_rule" "ecs_from_alb" {
-  count = var.alb_security_group_id != "" ? 1 : 0
+  count = var.enable_alb ? 1 : 0
 
   type                     = "ingress"
-  from_port                = 80
-  to_port                  = 80
+  from_port                = 3001
+  to_port                  = 3001
   protocol                 = "tcp"
   source_security_group_id = var.alb_security_group_id
   security_group_id        = aws_security_group.ecs_tasks.id
@@ -82,7 +82,7 @@ resource "aws_security_group_rule" "ecs_from_alb" {
 
 # Allow HTTP from internet (only when no ALB)
 resource "aws_security_group_rule" "ecs_from_internet" {
-  count = var.alb_security_group_id == "" ? 1 : 0
+  count = var.enable_alb ? 0 : 1
 
   type              = "ingress"
   from_port         = 3001
@@ -253,7 +253,7 @@ resource "aws_ecs_task_definition" "app" {
       name      = "app"
       image     = var.container_image
       essential = true
-      
+
       portMappings = [
         {
           containerPort = 3001
@@ -325,7 +325,7 @@ resource "aws_ecs_task_definition" "app" {
           value = "0"
         }
       ]
-      
+
       secrets = [
         {
           name      = "DB_USER"
@@ -364,7 +364,13 @@ resource "aws_ecs_service" "app" {
   network_configuration {
     subnets          = var.private_subnet_ids
     security_groups  = [aws_security_group.ecs_tasks.id]
-    assign_public_ip = length(var.target_group_arns) == 0 ? true : false
+    assign_public_ip = !var.enable_alb
+  }
+
+  # Spread tasks evenly across availability zones
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "attribute:ecs.availability-zone"
   }
 
   dynamic "load_balancer" {
@@ -383,3 +389,94 @@ resource "aws_ecs_service" "app" {
     Name = "${var.name_prefix}-app-service"
   })
 }
+
+# ========================================
+# ECS Auto-Scaling Configuration
+# ========================================
+
+# Auto-scaling target for ECS service
+resource "aws_appautoscaling_target" "ecs_service" {
+  count = var.autoscaling_enabled ? 1 : 0
+
+  max_capacity       = var.autoscaling_max_capacity
+  min_capacity       = var.autoscaling_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.app.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  depends_on = [aws_ecs_service.app]
+}
+
+# Target tracking scaling policy based on CPU utilization
+resource "aws_appautoscaling_policy" "ecs_cpu_scaling" {
+  count = var.autoscaling_enabled ? 1 : 0
+
+  name               = "${var.name_prefix}-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_service[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_service[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_service[0].service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = var.autoscaling_cpu_target
+    scale_in_cooldown  = var.scale_in_cooldown
+    scale_out_cooldown = var.scale_out_cooldown
+
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+  }
+}
+
+# CloudWatch Alarm for high CPU (scale-out trigger)
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
+  count = var.autoscaling_enabled ? 1 : 0
+
+  alarm_name          = "${var.name_prefix}-ecs-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 70
+  alarm_description   = "ECS service CPU utilization is above 70% for 2 minutes"
+  alarm_actions       = []
+
+  dimensions = {
+    ServiceName = aws_ecs_service.app.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.tags, {
+    Name      = "${var.name_prefix}-ecs-cpu-high-alarm"
+    Threshold = "70%"
+  })
+}
+
+# CloudWatch Alarm for low CPU (scale-in trigger)
+resource "aws_cloudwatch_metric_alarm" "ecs_cpu_low" {
+  count = var.autoscaling_enabled ? 1 : 0
+
+  alarm_name          = "${var.name_prefix}-ecs-cpu-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 5
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 30
+  alarm_description   = "ECS service CPU utilization is below 30% for 5 minutes"
+  alarm_actions       = []
+
+  dimensions = {
+    ServiceName = aws_ecs_service.app.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.tags, {
+    Name      = "${var.name_prefix}-ecs-cpu-low-alarm"
+    Threshold = "30%"
+  })
+}
+

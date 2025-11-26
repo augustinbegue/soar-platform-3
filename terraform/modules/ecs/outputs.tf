@@ -57,3 +57,39 @@ output "service_id" {
   description = "ID of the ECS service."
   value       = aws_ecs_service.app.id
 }
+
+output "autoscaling_enabled" {
+  description = "Whether auto-scaling is enabled for the ECS service."
+  value       = var.autoscaling_enabled
+}
+
+output "autoscaling_target_resource_id" {
+  description = "Resource ID of the auto-scaling target."
+  value       = var.autoscaling_enabled ? aws_appautoscaling_target.ecs_service[0].resource_id : null
+}
+
+output "autoscaling_min_capacity" {
+  description = "Minimum number of tasks for auto-scaling."
+  value       = var.autoscaling_min_capacity
+}
+
+output "autoscaling_max_capacity" {
+  description = "Maximum number of tasks for auto-scaling."
+  value       = var.autoscaling_max_capacity
+}
+
+output "autoscaling_cpu_target" {
+  description = "Target CPU utilization percentage for auto-scaling."
+  value       = var.autoscaling_cpu_target
+}
+
+output "cpu_high_alarm_name" {
+  description = "Name of the CloudWatch alarm for high CPU utilization."
+  value       = var.autoscaling_enabled ? aws_cloudwatch_metric_alarm.ecs_cpu_high[0].alarm_name : null
+}
+
+output "cpu_low_alarm_name" {
+  description = "Name of the CloudWatch alarm for low CPU utilization."
+  value       = var.autoscaling_enabled ? aws_cloudwatch_metric_alarm.ecs_cpu_low[0].alarm_name : null
+}
+

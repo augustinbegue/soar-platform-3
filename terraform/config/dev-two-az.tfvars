@@ -11,18 +11,18 @@ vpc_cidr = "10.20.0.0/16"
 
 # Public subnets (one per AZ)
 public_subnet_cidrs = {
-  "a" = "10.20.0.0/20"   # eu-west-1a
-  "b" = "10.20.16.0/20"  # eu-west-1b
+  "a" = "10.20.0.0/20"  # eu-west-1a
+  "b" = "10.20.16.0/20" # eu-west-1b
 }
 
 # Private subnets (one per AZ)
 private_subnet_cidrs = {
-  "a" = "10.20.64.0/20"  # eu-west-1a
-  "b" = "10.20.80.0/20"  # eu-west-1b
+  "a" = "10.20.64.0/20" # eu-west-1a
+  "b" = "10.20.80.0/20" # eu-west-1b
 }
 
 # Database subnets (one per AZ) - Aurora requires at least 2 AZs
 database_subnet_cidrs = {
-  "a" = "10.20.160.0/21"  # eu-west-1a
-  "b" = "10.20.168.0/21"  # eu-west-1b
+  "a" = "10.20.160.0/21" # eu-west-1a
+  "b" = "10.20.168.0/21" # eu-west-1b
 }

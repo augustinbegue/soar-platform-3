@@ -30,6 +30,12 @@ variable "alb_security_group_id" {
   default     = ""
 }
 
+variable "enable_alb" {
+  description = "Whether ALB is enabled (true) or tasks have public IPs (false)."
+  type        = bool
+  default     = false
+}
+
 variable "cluster_desired_count" {
   description = "Baseline desired count for ECS service capacity planning."
   type        = number
@@ -61,7 +67,7 @@ variable "db_writer_endpoint" {
 }
 
 variable "aurora_security_group_ids" {
-  description = "List of Aurora VPC security group IDs so ECS can create an ingress rule allowing DB traffic from tasks." 
+  description = "List of Aurora VPC security group IDs so ECS can create an ingress rule allowing DB traffic from tasks."
   type        = list(string)
   default     = []
 }
@@ -80,7 +86,7 @@ variable "db_reader_endpoint" {
 
 variable "db_reader_endpoints_per_az" {
   description = "Map of reader endpoints per AZ (reader_a, reader_b, reader_c)."
-  type = map(string)
+  type        = map(string)
   default = {
     reader_a = ""
     reader_b = ""
@@ -92,4 +98,40 @@ variable "availability_zones" {
   description = "List of availability zones matching the order of private_subnet_ids."
   type        = list(string)
   default     = []
+}
+
+variable "autoscaling_enabled" {
+  description = "Enable auto-scaling for the ECS service based on CPU utilization."
+  type        = bool
+  default     = true
+}
+
+variable "autoscaling_min_capacity" {
+  description = "Minimum number of tasks for auto-scaling."
+  type        = number
+  default     = 6
+}
+
+variable "autoscaling_max_capacity" {
+  description = "Maximum number of tasks for auto-scaling."
+  type        = number
+  default     = 18
+}
+
+variable "autoscaling_cpu_target" {
+  description = "Target CPU utilization percentage for auto-scaling."
+  type        = number
+  default     = 70
+}
+
+variable "scale_in_cooldown" {
+  description = "Cooldown period in seconds before allowing another scale-in activity."
+  type        = number
+  default     = 300
+}
+
+variable "scale_out_cooldown" {
+  description = "Cooldown period in seconds before allowing another scale-out activity."
+  type        = number
+  default     = 120
 }

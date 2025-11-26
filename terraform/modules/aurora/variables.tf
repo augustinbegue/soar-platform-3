@@ -36,7 +36,7 @@ variable "engine_version" {
   type        = string
   # Leave empty to use the provider's default (recommended). Set to a specific version
   # only if you need a particular engine release supported in your region/account.
-  default     = ""
+  default = ""
 }
 
 variable "master_username" {
@@ -63,7 +63,7 @@ variable "skip_final_snapshot" {
 }
 
 variable "final_snapshot_identifier" {
-  description = "Optional final snapshot identifier used when skip_final_snapshot is false. If empty, a generated identifier will be used." 
+  description = "Optional final snapshot identifier used when skip_final_snapshot is false. If empty, a generated identifier will be used."
   type        = string
   default     = ""
 }
@@ -72,4 +72,28 @@ variable "availability_zones" {
   description = "List of availability zones for read replica distribution"
   type        = list(string)
   default     = []
+}
+
+variable "serverless_min_capacity" {
+  description = "Minimum ACU (Aurora Capacity Units) for Serverless v2 auto-scaling"
+  type        = number
+  default     = 0.5
+}
+
+variable "serverless_max_capacity" {
+  description = "Maximum ACU (Aurora Capacity Units) for Serverless v2 auto-scaling"
+  type        = number
+  default     = 16
+}
+
+variable "performance_insights_enabled" {
+  description = "Enable Performance Insights for monitoring database performance"
+  type        = bool
+  default     = true
+}
+
+variable "performance_insights_retention_period" {
+  description = "Performance Insights data retention period in days (7 for free tier, 731 max)"
+  type        = number
+  default     = 7
 }

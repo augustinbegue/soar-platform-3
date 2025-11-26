@@ -3,10 +3,15 @@ output "vpc_id" {
   value       = module.core.vpc_id
 }
 
-# output "alb_dns_name" {
-#   description = "DNS name of the platform Application Load Balancer."
-#   value       = module.alb.load_balancer_dns_name
-# }
+output "alb_dns_name" {
+  description = "DNS name of the platform Application Load Balancer."
+  value       = module.alb.load_balancer_dns_name
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer."
+  value       = module.alb.load_balancer_arn
+}
 
 output "ecs_cluster_arn" {
   description = "ARN of the ECS cluster handling compute workloads."

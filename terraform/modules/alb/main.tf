@@ -39,7 +39,7 @@ resource "aws_lb" "main" {
 
 resource "aws_lb_target_group" "ecs" {
   name        = "${var.name_prefix}-ecs-tg"
-  port        = 80
+  port        = 3001
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -53,6 +53,7 @@ resource "aws_lb_target_group" "ecs" {
     path                = "/"
     protocol            = "HTTP"
     matcher             = "200"
+    port                = "3001"
   }
 
   deregistration_delay = 30

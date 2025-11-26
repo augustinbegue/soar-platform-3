@@ -62,3 +62,20 @@ output "cluster_member_count" {
   description = "Total number of cluster members (writer + readers)."
   value       = 1 + length(aws_rds_cluster_instance.reader_a) + length(aws_rds_cluster_instance.reader_b) + length(aws_rds_cluster_instance.reader_c)
 }
+
+output "serverless_scaling_configuration" {
+  description = "Serverless v2 auto-scaling configuration (min/max ACU)."
+  value = {
+    min_capacity = var.serverless_min_capacity
+    max_capacity = var.serverless_max_capacity
+  }
+}
+
+output "cloudwatch_monitoring_commands" {
+  description = "AWS CLI commands to monitor Aurora Serverless v2 scaling metrics."
+  value = {
+    serverless_capacity  = "aws cloudwatch get-metric-statistics --namespace AWS/RDS --metric-name ServerlessDatabaseCapacity --dimensions Name=DBClusterIdentifier,Value=${aws_rds_cluster.aurora.cluster_identifier} --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) --end-time $(date -u +%Y-%m-%dT%H:%M:%S) --period 300 --statistics Average,Maximum --region ${aws_rds_cluster.aurora.arn != "" ? split(":", aws_rds_cluster.aurora.arn)[3] : "eu-west-1"}"
+    cpu_utilization      = "aws cloudwatch get-metric-statistics --namespace AWS/RDS --metric-name CPUUtilization --dimensions Name=DBClusterIdentifier,Value=${aws_rds_cluster.aurora.cluster_identifier} --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) --end-time $(date -u +%Y-%m-%dT%H:%M:%S) --period 300 --statistics Average,Maximum --region ${aws_rds_cluster.aurora.arn != "" ? split(":", aws_rds_cluster.aurora.arn)[3] : "eu-west-1"}"
+    database_connections = "aws cloudwatch get-metric-statistics --namespace AWS/RDS --metric-name DatabaseConnections --dimensions Name=DBClusterIdentifier,Value=${aws_rds_cluster.aurora.cluster_identifier} --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) --end-time $(date -u +%Y-%m-%dT%H:%M:%S) --period 300 --statistics Average,Maximum --region ${aws_rds_cluster.aurora.arn != "" ? split(":", aws_rds_cluster.aurora.arn)[3] : "eu-west-1"}"
+  }
+}

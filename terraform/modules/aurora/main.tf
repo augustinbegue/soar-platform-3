@@ -29,10 +29,14 @@ resource "aws_rds_cluster_instance" "writer" {
   engine_version       = var.engine_version != "" ? var.engine_version : null
   publicly_accessible  = false
   db_subnet_group_name = aws_db_subnet_group.aurora.name
-  
+
   # Writer instance explicitly in first AZ
-  availability_zone    = length(var.availability_zones) > 0 ? var.availability_zones[0] : null
-  
+  availability_zone = length(var.availability_zones) > 0 ? var.availability_zones[0] : null
+
+  # Performance Insights for monitoring CPU, connections, and database metrics
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
+
   tags = merge(local.tags, {
     Role = "writer"
     AZ   = length(var.availability_zones) > 0 ? var.availability_zones[0] : "auto"
@@ -46,7 +50,7 @@ resource "aws_rds_cluster_instance" "writer" {
 # Read replica in AZ-A (same as writer for local reads)
 resource "aws_rds_cluster_instance" "reader_a" {
   count = length(var.availability_zones) > 0 ? 1 : 0
-  
+
   identifier           = "${var.name_prefix}-aurora-reader-a"
   cluster_identifier   = aws_rds_cluster.aurora.id
   instance_class       = "db.serverless"
@@ -55,7 +59,11 @@ resource "aws_rds_cluster_instance" "reader_a" {
   publicly_accessible  = false
   db_subnet_group_name = aws_db_subnet_group.aurora.name
   availability_zone    = var.availability_zones[0]
-  
+
+  # Performance Insights for monitoring CPU, connections, and database metrics
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
+
   tags = merge(local.tags, {
     Role = "reader"
     AZ   = var.availability_zones[0]
@@ -65,7 +73,7 @@ resource "aws_rds_cluster_instance" "reader_a" {
 # Read replica in AZ-B
 resource "aws_rds_cluster_instance" "reader_b" {
   count = length(var.availability_zones) > 1 ? 1 : 0
-  
+
   identifier           = "${var.name_prefix}-aurora-reader-b"
   cluster_identifier   = aws_rds_cluster.aurora.id
   instance_class       = "db.serverless"
@@ -74,7 +82,11 @@ resource "aws_rds_cluster_instance" "reader_b" {
   publicly_accessible  = false
   db_subnet_group_name = aws_db_subnet_group.aurora.name
   availability_zone    = var.availability_zones[1]
-  
+
+  # Performance Insights for monitoring CPU, connections, and database metrics
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
+
   tags = merge(local.tags, {
     Role = "reader"
     AZ   = var.availability_zones[1]
@@ -84,7 +96,7 @@ resource "aws_rds_cluster_instance" "reader_b" {
 # Read replica in AZ-C
 resource "aws_rds_cluster_instance" "reader_c" {
   count = length(var.availability_zones) > 2 ? 1 : 0
-  
+
   identifier           = "${var.name_prefix}-aurora-reader-c"
   cluster_identifier   = aws_rds_cluster.aurora.id
   instance_class       = "db.serverless"
@@ -93,7 +105,11 @@ resource "aws_rds_cluster_instance" "reader_c" {
   publicly_accessible  = false
   db_subnet_group_name = aws_db_subnet_group.aurora.name
   availability_zone    = var.availability_zones[2]
-  
+
+  # Performance Insights for monitoring CPU, connections, and database metrics
+  performance_insights_enabled          = var.performance_insights_enabled
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
+
   tags = merge(local.tags, {
     Role = "reader"
     AZ   = var.availability_zones[2]
@@ -101,10 +117,10 @@ resource "aws_rds_cluster_instance" "reader_c" {
 }
 
 resource "aws_rds_cluster" "aurora" {
-  cluster_identifier      = "${var.name_prefix}-aurora-cluster"
-  engine                  = var.engine
-  engine_version          = var.engine_version != "" ? var.engine_version : null
-  engine_mode             = var.engine_mode # "provisioned" pour serverless v2
+  cluster_identifier = "${var.name_prefix}-aurora-cluster"
+  engine             = var.engine
+  engine_version     = var.engine_version != "" ? var.engine_version : null
+  engine_mode        = var.engine_mode # "provisioned" pour serverless v2
   # Database name must start with a letter and contain only alphanumeric characters.
   # Sanitize var.name_prefix to remove non-alphanumeric characters (e.g. hyphens).
   # Remove common separators (hyphens) from the name_prefix so DB name is alphanumeric.
@@ -115,18 +131,19 @@ resource "aws_rds_cluster" "aurora" {
   vpc_security_group_ids  = length(var.security_group_ids) > 0 ? var.security_group_ids : [aws_security_group.aurora[0].id]
   backup_retention_period = var.backup_retention_period
   # Control whether a final snapshot is created on deletion. Default true = skip snapshot (useful for dev).
-  skip_final_snapshot     = var.skip_final_snapshot
+  skip_final_snapshot = var.skip_final_snapshot
   # If skip_final_snapshot is false, provide a final snapshot identifier. Use provided value or generate one.
   final_snapshot_identifier = var.skip_final_snapshot ? null : (var.final_snapshot_identifier != "" ? var.final_snapshot_identifier : "${var.name_prefix}-final-${random_id.suffix.hex}")
-  storage_encrypted       = true
-  deletion_protection     = false
-  apply_immediately       = true
-  
+  storage_encrypted         = true
+  deletion_protection       = false
+  apply_immediately         = true
+
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.aurora.name
+  enabled_cloudwatch_logs_exports = ["postgresql"]
 
   serverlessv2_scaling_configuration {
-    min_capacity = 0.5
-    max_capacity = 2
+    min_capacity = var.serverless_min_capacity
+    max_capacity = var.serverless_max_capacity
   }
 
   tags = local.tags
@@ -139,8 +156,8 @@ resource "aws_rds_cluster_parameter_group" "aurora" {
   description = "Aurora cluster parameter group for ${var.name_prefix}"
 
   parameter {
-    name  = "rds.force_ssl"
-    value = "0"
+    name         = "rds.force_ssl"
+    value        = "0"
     apply_method = "immediate"
   }
 
