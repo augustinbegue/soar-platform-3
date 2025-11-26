@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: crud_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Optional backend service example: uncomment to run the Node backend in a container
+# Make sure the backend's package.json is present and any build steps are done if required.
+# backend:
+#   image: node:18-alpine
+#   container_name: crud_backend
+#   working_dir: /usr/src/app
+#   volumes:
+#     - ./:/usr/src/app
+#   command: sh -c "npm install --no-audit --no-fund && PORT=3000 node index.js"
+#   ports:
+#     - "3000:3000"
+#   environment:
+#     - DATABASE_URL=postgresql://admin:admin123@db:5432/postgres
+#     - NODE_ENV=development
+#   depends_on:
+#     db:
+#       condition: service_healthy
+
+volumes:
+  db_data:
+    driver: local

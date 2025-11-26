@@ -14,7 +14,7 @@ variable "subnet_ids" {
 }
 
 variable "security_group_ids" {
-  description = "Security group IDs attached to the ALB."
+  description = "Security group IDs to attach to the ALB (typically from the core module)."
   type        = list(string)
 }
 

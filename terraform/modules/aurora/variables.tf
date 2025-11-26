@@ -34,7 +34,9 @@ variable "engine" {
 variable "engine_version" {
   description = "Preferred engine version for the Aurora cluster."
   type        = string
-  default     = "15.3"
+  # Leave empty to use the provider's default (recommended). Set to a specific version
+  # only if you need a particular engine release supported in your region/account.
+  default     = ""
 }
 
 variable "master_username" {
@@ -52,4 +54,22 @@ variable "backup_retention_period" {
   description = "Number of days to retain Aurora automatic backups."
   type        = number
   default     = 7
+}
+
+variable "skip_final_snapshot" {
+  description = "If true, skip creating a final snapshot when the cluster is deleted. Set to false to keep a final snapshot (useful for prod)."
+  type        = bool
+  default     = true
+}
+
+variable "final_snapshot_identifier" {
+  description = "Optional final snapshot identifier used when skip_final_snapshot is false. If empty, a generated identifier will be used." 
+  type        = string
+  default     = ""
+}
+
+variable "availability_zones" {
+  description = "List of availability zones for read replica distribution"
+  type        = list(string)
+  default     = []
 }

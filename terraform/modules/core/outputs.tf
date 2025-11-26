@@ -1,16 +1,16 @@
 output "vpc_id" {
   description = "Identifier for the shared VPC hosting the platform."
-  value       = null
+  value       = aws_vpc.main.id
 }
 
 output "public_subnet_ids" {
   description = "List of public subnet IDs used by the ALB across AZs."
-  value       = []
+  value       = [for subnet in aws_subnet.public : subnet.id]
 }
 
 output "private_subnet_ids" {
   description = "List of private subnet IDs hosting ECS workloads."
-  value       = []
+  value       = [for subnet in aws_subnet.private : subnet.id]
 }
 
 output "database_subnet_ids" {
@@ -20,7 +20,7 @@ output "database_subnet_ids" {
 
 output "alb_security_group_ids" {
   description = "Security group IDs that should be attached to ALB resources."
-  value       = []
+  value       = [aws_security_group.alb.id]
 }
 
 output "ecs_security_group_ids" {
