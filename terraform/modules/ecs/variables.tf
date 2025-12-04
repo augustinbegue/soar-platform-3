@@ -39,7 +39,7 @@ variable "enable_alb" {
 variable "cluster_desired_count" {
   description = "Baseline desired count for ECS service capacity planning."
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "launch_type" {
@@ -109,7 +109,7 @@ variable "autoscaling_enabled" {
 variable "autoscaling_min_capacity" {
   description = "Minimum number of tasks for auto-scaling."
   type        = number
-  default     = 6
+  default     = 3
 }
 
 variable "autoscaling_max_capacity" {
@@ -121,7 +121,7 @@ variable "autoscaling_max_capacity" {
 variable "autoscaling_cpu_target" {
   description = "Target CPU utilization percentage for auto-scaling."
   type        = number
-  default     = 70
+  default     = 30
 }
 
 variable "scale_in_cooldown" {

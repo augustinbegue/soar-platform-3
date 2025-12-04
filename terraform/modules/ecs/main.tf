@@ -447,8 +447,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   namespace           = "AWS/ECS"
   period              = 30
   statistic           = "Average"
-  threshold           = 70
-  alarm_description   = "ECS service CPU utilization is above 70% for 30 seconds"
+  threshold           = 30
+  alarm_description   = "ECS service CPU utilization is above 30% for 30 seconds"
   alarm_actions       = []
 
   dimensions = {
@@ -458,7 +458,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
 
   tags = merge(local.tags, {
     Name      = "${var.name_prefix}-ecs-cpu-high-alarm"
-    Threshold = "70"
+    Threshold = "30"
   })
 }
 
@@ -471,10 +471,10 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_low" {
   evaluation_periods  = 1
   metric_name         = "CPUUtilization"
   namespace           = "AWS/ECS"
-  period              = 30
+  period              = 20
   statistic           = "Average"
-  threshold           = 30
-  alarm_description   = "ECS service CPU utilization is below 30% for 30 seconds"
+  threshold           = 20
+  alarm_description   = "ECS service CPU utilization is below 20% for 20 seconds"
   alarm_actions       = []
 
   dimensions = {
@@ -484,7 +484,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_low" {
 
   tags = merge(local.tags, {
     Name      = "${var.name_prefix}-ecs-cpu-low-alarm"
-    Threshold = "30"
+    Threshold = "20"
   })
 }
 

@@ -29,12 +29,7 @@ echo "📍 ALB DNS Name: $ALB_DNS_NAME"
 sed -e "s|\${FRONTEND_URL}|$FRONTEND_URL|g" \
     -e "s|\${ALB_DNS_NAME}|$ALB_DNS_NAME|g" \
     load-testing/p3-targets.txt > load-testing/p3-targets.final.txt
-
-# Copy the file to the server doing the load testing
-ssh hamilton.server "rm -rf ~/load-testing && mkdir -p ~/load-testing"
-scp load-testing/p3-targets.final.txt hamilton.server:~/load-testing/p3-targets.final.txt
-scp -rp load-testing/request-bodies hamilton.server:~/load-testing/request-bodies
-
+    
 echo "✅ Load test targets file created: p3-targets.final.txt"
 echo ""
 echo "🎯 Ready to run load test with:"
