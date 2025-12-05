@@ -7,7 +7,7 @@ URL=$(terraform output -raw alb_dns_name)
 
 cd ..
 
-create-users.sh "http://$URL"
+bash create-users.sh "http://$URL"
 
 sed -e "s|\${FRONTEND_URL}|$FRONTEND_URL|g" \
     -e "s|\${ALB_DNS_NAME}|$ALB_DNS_NAME|g" \
