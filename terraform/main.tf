@@ -82,3 +82,30 @@ module "s3_frontend" {
 
   depends_on = [module.ecs, module.alb]
 }
+
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  name_prefix = local.name_prefix
+
+  # ALB metrics
+  alb_name                = module.alb.load_balancer_name
+  target_group_name       = module.alb.target_group_name
+  target_group_arn_suffix = module.alb.target_group_arn_suffix
+
+  # ECS metrics
+  ecs_cluster_name = module.ecs.cluster_name
+  ecs_service_name = module.ecs.service_name
+  ecs_min_capacity = var.cluster_desired_count
+
+  # Alarm configuration
+  enable_alarms = true
+  alarm_actions = []
+
+  # Thresholds
+  alb_high_request_rate_threshold  = 50000
+  alb_high_response_time_threshold = 1.0
+  alb_high_5xx_threshold           = 100
+
+  depends_on = [module.ecs, module.alb]
+}

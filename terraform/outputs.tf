@@ -90,3 +90,28 @@ output "aurora_reader_instance_endpoints" {
   description = "Individual reader instance endpoints per AZ (reader_a, reader_b, reader_c)"
   value       = module.aurora.reader_instance_endpoints
 }
+
+# ========================================
+# Monitoring & CloudWatch Outputs
+# ========================================
+
+output "cloudwatch_dashboard_url" {
+  description = "URL to the CloudWatch monitoring dashboard."
+  value       = module.monitoring.dashboard_url
+}
+
+output "cloudwatch_dashboard_name" {
+  description = "Name of the CloudWatch dashboard."
+  value       = module.monitoring.dashboard_name
+}
+
+output "monitoring_alarms" {
+  description = "CloudWatch alarm names created for monitoring."
+  value = {
+    alb_high_request_rate  = module.monitoring.alb_high_request_rate_alarm_name
+    alb_high_response_time = module.monitoring.alb_high_response_time_alarm_name
+    alb_high_5xx_errors    = module.monitoring.alb_high_5xx_alarm_name
+    ecs_scaling_activity   = module.monitoring.ecs_scaling_activity_alarm_name
+    alb_unhealthy_targets  = module.monitoring.alb_unhealthy_targets_alarm_name
+  }
+}
