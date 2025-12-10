@@ -32,9 +32,11 @@ module "ecs" {
   name_prefix = local.name_prefix
   vpc_id      = module.core.vpc_id
   # Using private subnets with ALB for production-ready setup
-  private_subnet_ids    = module.core.private_subnet_ids
-  capacity_subnet_ids   = module.core.private_subnet_ids
-  cluster_desired_count = 6
+  private_subnet_ids       = module.core.private_subnet_ids
+  capacity_subnet_ids      = module.core.private_subnet_ids
+  cluster_desired_count    = 3
+  autoscaling_min_capacity = 3
+  autoscaling_max_capacity = 12
 
   # ALB integration enabled
   enable_alb            = true
@@ -90,13 +92,14 @@ module "monitoring" {
 
   # ALB metrics
   alb_name                = module.alb.load_balancer_name
+  alb_arn_suffix          = module.alb.load_balancer_arn_suffix
   target_group_name       = module.alb.target_group_name
   target_group_arn_suffix = module.alb.target_group_arn_suffix
 
   # ECS metrics
   ecs_cluster_name = module.ecs.cluster_name
   ecs_service_name = module.ecs.service_name
-  ecs_min_capacity = var.cluster_desired_count
+  ecs_min_capacity = 3
 
   # Alarm configuration
   enable_alarms = true

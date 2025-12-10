@@ -15,160 +15,151 @@ resource "aws_cloudwatch_dashboard" "ecs_monitoring" {
   dashboard_body = jsonencode({
     widgets = [
       {
-        type = "metric"
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", { stat = "Sum", label = "Total Requests" }],
-            [".", "TargetResponseTime", { stat = "Average", label = "Response Time (avg)" }],
-            [".", "HTTPCode_Target_2XX_Count", { stat = "Sum", label = "2XX Responses" }],
-            [".", "HTTPCode_Target_4XX_Count", { stat = "Sum", label = "4XX Responses" }],
-            [".", "HTTPCode_Target_5XX_Count", { stat = "Sum", label = "5XX Responses" }],
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", var.alb_arn_suffix, { stat = "Sum", label = "Total Requests" }],
+            [".", "TargetResponseTime", ".", ".", { stat = "Average", label = "Response Time (avg)" }],
+            [".", "HTTPCode_Target_2XX_Count", ".", ".", { stat = "Sum", label = "2XX Responses" }],
+            [".", "HTTPCode_Target_4XX_Count", ".", ".", { stat = "Sum", label = "4XX Responses" }],
+            [".", "HTTPCode_Target_5XX_Count", ".", ".", { stat = "Sum", label = "5XX Responses" }],
           ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "ALB Request Count & Response Time"
-          yAxis = {
-            left = {
-              label = "Count / Time (ms)"
-            }
-          }
-          dimensions = {
-            LoadBalancer = var.alb_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "ALB Request Count & Response Time"
+          view    = "timeSeries"
+          stacked = false
         }
       },
       {
-        type = "metric"
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "ActiveConnectionCount", { stat = "Average", label = "Active Connections" }],
-            [".", "NewConnectionCount", { stat = "Sum", label = "New Connections" }],
-            [".", "ProcessedBytes", { stat = "Sum", label = "Processed Bytes" }],
+            ["AWS/ApplicationELB", "ActiveConnectionCount", "LoadBalancer", var.alb_arn_suffix, { stat = "Average", label = "Active Connections" }],
+            [".", "NewConnectionCount", ".", ".", { stat = "Sum", label = "New Connections" }],
+            [".", "ProcessedBytes", ".", ".", { stat = "Sum", label = "Processed Bytes" }],
           ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "ALB Connection Metrics"
-          dimensions = {
-            LoadBalancer = var.alb_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "ALB Connection Metrics"
+          view    = "timeSeries"
+          stacked = false
         }
       },
       {
-        type = "metric"
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ECS", "CPUUtilization", { stat = "Average", label = "CPU Utilization" }],
-            [".", "MemoryUtilization", { stat = "Average", label = "Memory Utilization" }],
+            ["ECS/ContainerInsights", "CpuUtilized", "ServiceName", var.ecs_service_name, "ClusterName", var.ecs_cluster_name, { stat = "Average", label = "CPU Utilized" }],
+            [".", "CpuReserved", ".", ".", ".", ".", { stat = "Average", label = "CPU Reserved" }],
+            [".", "MemoryUtilized", ".", ".", ".", ".", { stat = "Average", label = "Memory Utilized (MB)" }],
+            [".", "MemoryReserved", ".", ".", ".", ".", { stat = "Average", label = "Memory Reserved (MB)" }],
           ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "ECS Service Resource Utilization"
-          yAxis = {
-            left = {
-              label = "Percentage (%)"
-            }
-          }
-          dimensions = {
-            ServiceName = var.ecs_service_name
-            ClusterName = var.ecs_cluster_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "ECS Service Resource Utilization (Container Insights)"
+          view    = "timeSeries"
+          stacked = false
         }
       },
       {
-        type = "metric"
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ECS", "DesiredTaskCount", { stat = "Average", label = "Desired Tasks" }],
-            [".", "RunningCount", { stat = "Average", label = "Running Tasks" }],
+            ["ECS/ContainerInsights", "DesiredTaskCount", "ServiceName", var.ecs_service_name, "ClusterName", var.ecs_cluster_name, { stat = "Average", label = "Desired Tasks" }],
+            [".", "RunningTaskCount", ".", ".", ".", ".", { stat = "Average", label = "Running Tasks" }],
+            [".", "PendingTaskCount", ".", ".", ".", ".", { stat = "Average", label = "Pending Tasks" }],
           ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "ECS Service Task Count"
-          yAxis = {
-            left = {
-              label = "Count"
-            }
-          }
-          dimensions = {
-            ServiceName = var.ecs_service_name
-            ClusterName = var.ecs_cluster_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "ECS Service Task Count"
+          view    = "timeSeries"
+          stacked = false
         }
       },
       {
-        type = "metric"
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "HealthyHostCount", { stat = "Average", label = "Healthy Hosts" }],
-            [".", "UnHealthyHostCount", { stat = "Average", label = "Unhealthy Hosts" }],
+            ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", var.target_group_arn_suffix, "LoadBalancer", var.alb_arn_suffix, { stat = "Average", label = "Healthy Hosts" }],
+            [".", "UnHealthyHostCount", ".", ".", ".", ".", { stat = "Average", label = "Unhealthy Hosts" }],
           ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "Target Group Health Status"
-          yAxis = {
-            left = {
-              label = "Count"
-            }
-          }
-          dimensions = {
-            LoadBalancer = var.alb_name
-            TargetGroup  = var.target_group_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "Target Group Health Status"
+          view    = "timeSeries"
+          stacked = false
         }
       },
       {
-        type = "metric"
+        type   = "metric"
+        x      = 12
+        y      = 12
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "RequestCountPerTarget", { stat = "Sum", label = "Requests per Target" }],
+            ["ECS/ContainerInsights", "NetworkRxBytes", "ServiceName", var.ecs_service_name, "ClusterName", var.ecs_cluster_name, { stat = "Average", label = "Network RX (bytes)" }],
+            [".", "NetworkTxBytes", ".", ".", ".", ".", { stat = "Average", label = "Network TX (bytes)" }],
           ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "Request Count Per Target"
-          yAxis = {
-            left = {
-              label = "Count"
-            }
-          }
-          dimensions = {
-            LoadBalancer = var.alb_name
-            TargetGroup  = var.target_group_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "ECS Network I/O (Container Insights)"
+          view    = "timeSeries"
+          stacked = false
         }
       },
       {
-        type = "log"
+        type   = "log"
+        x      = 0
+        y      = 18
+        width  = 12
+        height = 6
         properties = {
-          query  = "fields @timestamp, @message, @duration | stats count() as request_count, pct(@duration, 99) as p99_latency by bin(@timestamp, 5m)"
-          region = data.aws_region.current.name
-          title  = "Request Count & Latency from Logs (5-min bins)"
+          query         = "SOURCE '/ecs/${var.name_prefix}' | fields @timestamp, @message | stats count() as request_count by bin(1m)"
+          region        = data.aws_region.current.id
+          title         = "Request Count from Logs (1-min bins)"
+          logGroupNames = ["/ecs/${var.name_prefix}"]
+          view          = "timeSeries"
+          stacked       = false
         }
       },
       {
-        type = "metric"
+        type   = "metric"
+        x      = 12
+        y      = 18
+        width  = 12
+        height = 6
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "TargetTLSNegotiationErrorCount", { stat = "Sum", label = "TLS Errors" }],
-            [".", "ClientTLSNegotiationErrorCount", { stat = "Sum", label = "Client TLS Errors" }],
+            ["ECS/ContainerInsights", "StorageReadBytes", "ServiceName", var.ecs_service_name, "ClusterName", var.ecs_cluster_name, { stat = "Average", label = "Storage Read (bytes)" }],
+            [".", "StorageWriteBytes", ".", ".", ".", ".", { stat = "Average", label = "Storage Write (bytes)" }],
           ]
-          period = 300
-          stat   = "Sum"
-          region = data.aws_region.current.name
-          title  = "ALB TLS/SSL Errors"
-          yAxis = {
-            left = {
-              label = "Error Count"
-            }
-          }
-          dimensions = {
-            LoadBalancer = var.alb_name
-          }
+          period  = 60
+          region  = data.aws_region.current.id
+          title   = "ECS Storage I/O (Container Insights)"
+          view    = "timeSeries"
+          stacked = false
         }
       },
     ]
@@ -196,7 +187,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_request_rate" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    LoadBalancer = var.alb_name
+    LoadBalancer = var.alb_arn_suffix
   }
 
   tags = merge(local.tags, {
@@ -221,7 +212,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    LoadBalancer = var.alb_name
+    LoadBalancer = var.alb_arn_suffix
   }
 
   tags = merge(local.tags, {
@@ -246,7 +237,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_5xx_rate" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    LoadBalancer = var.alb_name
+    LoadBalancer = var.alb_arn_suffix
   }
 
   tags = merge(local.tags, {
@@ -260,7 +251,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_5xx_rate" {
 
 # Alarm for when scaling occurs due to request count
 resource "aws_cloudwatch_metric_alarm" "ecs_scaling_activity" {
-  count = var.enable_alarms ? 1 : 0
+  count = var.enable_alarms && var.ecs_autoscaling_group_name != "" ? 1 : 0
 
   alarm_name          = "${var.name_prefix}-ecs-scaling-activity"
   comparison_operator = "GreaterThanOrEqualToThreshold"
@@ -300,8 +291,8 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_targets" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    LoadBalancer = var.alb_name
-    TargetGroup  = var.target_group_name
+    LoadBalancer = var.alb_arn_suffix
+    TargetGroup  = var.target_group_arn_suffix
   }
 
   tags = merge(local.tags, {

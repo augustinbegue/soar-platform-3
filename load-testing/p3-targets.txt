@@ -1,4 +1,3 @@
-GET http://${ALB_DNS_NAME}/health
 GET http://${ALB_DNS_NAME}/health/database
 GET http://${ALB_DNS_NAME}/
-GET http://${ALB_DNS_NAME}/users
+GET http://${ALB_DNS_NAME}/db/users?limit=1000
