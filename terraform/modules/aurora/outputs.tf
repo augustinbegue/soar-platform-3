@@ -60,7 +60,7 @@ output "reader_instance_endpoints" {
 
 output "cluster_member_count" {
   description = "Total number of cluster members (writer + readers)."
-  value       = 1 + length(aws_rds_cluster_instance.reader_a) + length(aws_rds_cluster_instance.reader_b) + length(aws_rds_cluster_instance.reader_c)
+  value       = 1 + length(aws_rds_cluster_instance.reader_b) + length(aws_rds_cluster_instance.reader_c)
 }
 
 output "serverless_scaling_configuration" {
