@@ -42,6 +42,7 @@ module "ecs" {
   enable_alb            = true
   target_group_arns     = module.alb.target_group_arns
   alb_security_group_id = module.core.alb_security_group_ids[0]
+  alb_arn_suffix        = "${module.alb.load_balancer_arn_suffix}/${module.alb.target_group_arn_suffix}"
 
   # Database connection
   container_image            = "ghcr.io/mzzay/soar-platform2/crud_app/backend:master-fddc6fe"

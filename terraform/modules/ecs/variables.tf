@@ -36,6 +36,12 @@ variable "enable_alb" {
   default     = false
 }
 
+variable "alb_arn_suffix" {
+  description = "Combined ALB and target group ARN suffix for request count scaling (format: app/lb-name/123456789/targetgroup/tg-name/123456789)."
+  type        = string
+  default     = ""
+}
+
 variable "cluster_desired_count" {
   description = "Baseline desired count for ECS service capacity planning."
   type        = number

@@ -414,24 +414,25 @@ resource "aws_appautoscaling_target" "ecs_service" {
   depends_on = [aws_ecs_service.app]
 }
 
-# Target tracking scaling policy based on CPU utilization
-resource "aws_appautoscaling_policy" "ecs_cpu_scaling" {
-  count = var.autoscaling_enabled ? 1 : 0
+# Target tracking scaling policy based on ALB request count per target
+resource "aws_appautoscaling_policy" "ecs_request_count_scaling" {
+  count = var.autoscaling_enabled && var.enable_alb ? 1 : 0
 
-  name               = "${var.name_prefix}-cpu-scaling"
+  name               = "${var.name_prefix}-request-count-scaling"
   policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.ecs_service[0].resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_service[0].scalable_dimension
   service_namespace  = aws_appautoscaling_target.ecs_service[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
-    target_value       = var.autoscaling_cpu_target
+    target_value       = 1200
     scale_in_cooldown  = var.scale_in_cooldown
     scale_out_cooldown = var.scale_out_cooldown
     disable_scale_in   = false
 
     predefined_metric_specification {
-      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = var.alb_arn_suffix
     }
   }
 }
