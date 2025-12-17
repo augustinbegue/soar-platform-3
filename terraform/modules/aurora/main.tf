@@ -18,79 +18,41 @@ resource "aws_secretsmanager_secret_version" "aurora_credentials_version" {
 }
 
 # ========================================
-# Aurora Writer Instance (Serverless v2)
+# Aurora Instances (Serverless v2)
+# One instance per AZ: first is writer, rest are readers
 # ========================================
 
-resource "aws_rds_cluster_instance" "writer" {
-  identifier           = "${var.name_prefix}-aurora-writer"
+locals {
+  # Build a map of instances: one per AZ
+  # First AZ gets the writer, subsequent AZs get readers
+  aurora_instances = {
+    for idx, az in var.availability_zones : az => {
+      identifier = idx == 0 ? "${var.name_prefix}-aurora-writer" : "${var.name_prefix}-aurora-reader-${idx}"
+      role       = idx == 0 ? "writer" : "reader"
+      az         = az
+    }
+  }
+}
+
+resource "aws_rds_cluster_instance" "instances" {
+  for_each = local.aurora_instances
+
+  identifier           = each.value.identifier
   cluster_identifier   = aws_rds_cluster.aurora.id
   instance_class       = "db.serverless" # Aurora Serverless v2
   engine               = var.engine
   engine_version       = var.engine_version != "" ? var.engine_version : null
   publicly_accessible  = false
   db_subnet_group_name = aws_db_subnet_group.aurora.name
-
-  # Writer instance explicitly in first AZ
-  availability_zone = length(var.availability_zones) > 0 ? var.availability_zones[0] : null
+  availability_zone    = each.value.az
 
   # Performance Insights for monitoring CPU, connections, and database metrics
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
 
   tags = merge(local.tags, {
-    Role = "writer"
-    AZ   = length(var.availability_zones) > 0 ? var.availability_zones[0] : "auto"
-  })
-}
-
-# ========================================
-# Aurora Read Replicas (Serverless v2)
-# One reader per additional AZ (writer already covers first AZ)
-# ========================================
-
-# Read replica in AZ-B
-resource "aws_rds_cluster_instance" "reader_b" {
-  count = length(var.availability_zones) > 1 ? 1 : 0
-
-  identifier           = "${var.name_prefix}-aurora-reader-b"
-  cluster_identifier   = aws_rds_cluster.aurora.id
-  instance_class       = "db.serverless"
-  engine               = var.engine
-  engine_version       = var.engine_version != "" ? var.engine_version : null
-  publicly_accessible  = false
-  db_subnet_group_name = aws_db_subnet_group.aurora.name
-  availability_zone    = var.availability_zones[1]
-
-  # Performance Insights for monitoring CPU, connections, and database metrics
-  performance_insights_enabled          = var.performance_insights_enabled
-  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
-
-  tags = merge(local.tags, {
-    Role = "reader"
-    AZ   = var.availability_zones[1]
-  })
-}
-
-# Read replica in AZ-C
-resource "aws_rds_cluster_instance" "reader_c" {
-  count = length(var.availability_zones) > 2 ? 1 : 0
-
-  identifier           = "${var.name_prefix}-aurora-reader-c"
-  cluster_identifier   = aws_rds_cluster.aurora.id
-  instance_class       = "db.serverless"
-  engine               = var.engine
-  engine_version       = var.engine_version != "" ? var.engine_version : null
-  publicly_accessible  = false
-  db_subnet_group_name = aws_db_subnet_group.aurora.name
-  availability_zone    = var.availability_zones[2]
-
-  # Performance Insights for monitoring CPU, connections, and database metrics
-  performance_insights_enabled          = var.performance_insights_enabled
-  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
-
-  tags = merge(local.tags, {
-    Role = "reader"
-    AZ   = var.availability_zones[2]
+    Role = each.value.role
+    AZ   = each.value.az
   })
 }
 
@@ -165,6 +127,12 @@ locals {
     Component = "aurora"
     Name      = var.name_prefix
   }
+
+  # Helper to get writer instance (first AZ)
+  writer_az = length(var.availability_zones) > 0 ? var.availability_zones[0] : null
+
+  # Helper to get reader AZs (all except first)
+  reader_azs = length(var.availability_zones) > 1 ? slice(var.availability_zones, 1, length(var.availability_zones)) : []
 }
 
 # Stable random suffix for resource names (avoids collisions with scheduled-for-deletion secrets)

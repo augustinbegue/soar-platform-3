@@ -37,30 +37,40 @@ output "aurora_security_group_ids" {
 
 output "writer_instance_id" {
   description = "Identifier of the Aurora writer instance."
-  value       = aws_rds_cluster_instance.writer.id
+  value       = local.writer_az != null ? aws_rds_cluster_instance.instances[local.writer_az].id : null
 }
 
 output "reader_instance_ids" {
   description = "List of reader instance identifiers across all AZs."
-  value = concat(
-    aws_rds_cluster_instance.reader_a[*].id,
-    aws_rds_cluster_instance.reader_b[*].id,
-    aws_rds_cluster_instance.reader_c[*].id
-  )
+  value = [
+    for az in local.reader_azs : aws_rds_cluster_instance.instances[az].id
+  ]
 }
 
 output "reader_instance_endpoints" {
   description = "Individual endpoints for each reader instance (for direct access if needed)."
   value = {
-    reader_a = length(aws_rds_cluster_instance.reader_a) > 0 ? aws_rds_cluster_instance.reader_a[0].endpoint : null
-    reader_b = length(aws_rds_cluster_instance.reader_b) > 0 ? aws_rds_cluster_instance.reader_b[0].endpoint : null
-    reader_c = length(aws_rds_cluster_instance.reader_c) > 0 ? aws_rds_cluster_instance.reader_c[0].endpoint : null
+    for az in local.reader_azs : az => aws_rds_cluster_instance.instances[az].endpoint
   }
 }
 
 output "cluster_member_count" {
   description = "Total number of cluster members (writer + readers)."
-  value       = 1 + length(aws_rds_cluster_instance.reader_b) + length(aws_rds_cluster_instance.reader_c)
+  value       = length(var.availability_zones)
+}
+
+output "instance_ids" {
+  description = "Map of all instance IDs by availability zone."
+  value = {
+    for az, instance in aws_rds_cluster_instance.instances : az => instance.id
+  }
+}
+
+output "instance_endpoints" {
+  description = "Map of all instance endpoints by availability zone."
+  value = {
+    for az, instance in aws_rds_cluster_instance.instances : az => instance.endpoint
+  }
 }
 
 output "serverless_scaling_configuration" {
