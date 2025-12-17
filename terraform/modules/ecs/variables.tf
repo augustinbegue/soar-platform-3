@@ -91,13 +91,9 @@ variable "db_reader_endpoint" {
 }
 
 variable "db_reader_endpoints_per_az" {
-  description = "Map of reader endpoints per AZ (reader_a, reader_b, reader_c)."
+  description = "Map of reader endpoints keyed by availability zone name."
   type        = map(string)
-  default = {
-    reader_a = ""
-    reader_b = ""
-    reader_c = ""
-  }
+  default     = {}
 }
 
 variable "availability_zones" {

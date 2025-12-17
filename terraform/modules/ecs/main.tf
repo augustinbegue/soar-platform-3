@@ -251,6 +251,32 @@ resource "aws_cloudwatch_log_group" "ecs_tasks" {
 # ECS Task Definition
 # ========================================
 
+locals {
+  # Build dynamic reader endpoint environment variables from AZ-keyed map
+  reader_env_vars = [
+    for az, endpoint in var.db_reader_endpoints_per_az : {
+      name  = "DB_READER_${upper(substr(az, length(az) - 1, 1))}"
+      value = endpoint
+    }
+  ]
+
+  # Static environment variables
+  static_env_vars = [
+    { name = "PORT", value = "3001" },
+    { name = "HOST", value = "0.0.0.0" },
+    { name = "ENVIRONMENT", value = "dev" },
+    { name = "DB_WRITER_HOST", value = var.db_writer_endpoint },
+    { name = "DB_READER_FALLBACK", value = var.db_reader_endpoint },
+    { name = "DB_PORT", value = "5432" },
+    { name = "DB_NAME", value = var.db_name },
+    { name = "DATABASE_USE_CLUSTER", value = "false" },
+    { name = "NODE_TLS_REJECT_UNAUTHORIZED", value = "0" }
+  ]
+
+  # Combined environment variables
+  container_env_vars = concat(local.static_env_vars, local.reader_env_vars)
+}
+
 resource "aws_ecs_task_definition" "app" {
   family                   = "${var.name_prefix}-app"
   network_mode             = "awsvpc"
@@ -288,56 +314,7 @@ resource "aws_ecs_task_definition" "app" {
         }
       }
 
-      environment = [
-        {
-          name  = "PORT"
-          value = "3001"
-        },
-        {
-          name  = "HOST"
-          value = "0.0.0.0"
-        },
-        {
-          name  = "ENVIRONMENT"
-          value = "dev"
-        },
-        {
-          name  = "DB_WRITER_HOST"
-          value = var.db_writer_endpoint
-        },
-        {
-          name  = "DB_READER_A"
-          value = var.db_reader_endpoints_per_az["reader_a"]
-        },
-        {
-          name  = "DB_READER_B"
-          value = var.db_reader_endpoints_per_az["reader_b"]
-        },
-        {
-          name  = "DB_READER_C"
-          value = var.db_reader_endpoints_per_az["reader_c"]
-        },
-        {
-          name  = "DB_READER_FALLBACK"
-          value = var.db_reader_endpoint
-        },
-        {
-          name  = "DB_PORT"
-          value = "5432"
-        },
-        {
-          name  = "DB_NAME"
-          value = var.db_name
-        },
-        {
-          name  = "DATABASE_USE_CLUSTER"
-          value = "false"
-        },
-        {
-          name  = "NODE_TLS_REJECT_UNAUTHORIZED"
-          value = "0"
-        }
-      ]
+      environment = local.container_env_vars
 
       secrets = [
         {
@@ -405,7 +382,7 @@ resource "aws_ecs_service" "app" {
 resource "aws_appautoscaling_target" "ecs_service" {
   count = var.autoscaling_enabled ? 1 : 0
 
-  max_capacity       = var.autoscaling_max_capacity
+  max_capacity       = 9
   min_capacity       = var.autoscaling_min_capacity
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.app.name}"
   scalable_dimension = "ecs:service:DesiredCount"
