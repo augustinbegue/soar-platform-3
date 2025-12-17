@@ -45,30 +45,8 @@ resource "aws_rds_cluster_instance" "writer" {
 
 # ========================================
 # Aurora Read Replicas (Serverless v2)
+# One reader per additional AZ (writer already covers first AZ)
 # ========================================
-
-# Read replica in AZ-A (same as writer for local reads)
-resource "aws_rds_cluster_instance" "reader_a" {
-  count = length(var.availability_zones) > 0 ? 1 : 0
-
-  identifier           = "${var.name_prefix}-aurora-reader-a"
-  cluster_identifier   = aws_rds_cluster.aurora.id
-  instance_class       = "db.serverless"
-  engine               = var.engine
-  engine_version       = var.engine_version != "" ? var.engine_version : null
-  publicly_accessible  = false
-  db_subnet_group_name = aws_db_subnet_group.aurora.name
-  availability_zone    = var.availability_zones[0]
-
-  # Performance Insights for monitoring CPU, connections, and database metrics
-  performance_insights_enabled          = var.performance_insights_enabled
-  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
-
-  tags = merge(local.tags, {
-    Role = "reader"
-    AZ   = var.availability_zones[0]
-  })
-}
 
 # Read replica in AZ-B
 resource "aws_rds_cluster_instance" "reader_b" {
